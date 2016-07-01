@@ -77,6 +77,7 @@ public class FichaAcademica implements Serializable {
                     Elements ths = tr.getElementsByTag("th");
                     if (ths.size() > 0) {
                         Element th = ths.first();
+                        // TODO: ddtitle colspan 12 CREDITOS TRANSFERIDOS
                         if (th.hasAttr("class") && th.hasAttr("colspan") && th.attr("class").contains("ddlabel")) {
                             if (th.attr("colspan").equals("12") || th.attr("colspan").equals("11")) {
                                 if (semestre != null && !semestres.contains(semestre)) {

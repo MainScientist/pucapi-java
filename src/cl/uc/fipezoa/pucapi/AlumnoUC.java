@@ -10,6 +10,7 @@ import cl.uc.fipezoa.pucapi.fichaacademica.FichaAcademica;
 import cl.uc.fipezoa.pucapi.fichaacademica.RamoCursado;
 import cl.uc.fipezoa.pucapi.fichaacademica.Semestre;
 import cl.uc.fipezoa.pucapi.portaluc.UCMacAddress;
+import cl.uc.fipezoa.pucapi.webcursos.WebCursosPage;
 import cl.uc.fipezoa.requests.Response;
 import cl.uc.fipezoa.requests.Session;
 import cl.uc.fipezoa.requests.UrlParameters;
@@ -64,6 +65,7 @@ public class AlumnoUC implements Serializable{
     private int generacion;
     private String situacion;
     private FichaAcademica fichaAcademica;
+    private WebCursosPage webCursosPage;
 
     private transient Session session = new Session();
 
@@ -82,6 +84,7 @@ public class AlumnoUC implements Serializable{
         }
         fichaAcademica = new FichaAcademica(this, callback);
         callback.onProgressChange(new Progress(0, Progress.NORMAL, "Datos cargados..."));
+        // webCursosPage = new WebCursosPage(this);
     }
 
     protected AlumnoUC(String username, String password) throws IOException, LoginException {

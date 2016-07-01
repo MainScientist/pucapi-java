@@ -44,6 +44,14 @@ public class Main {
             e.printStackTrace();
         }
 
+        try{
+            AlumnoUC alumnoUC = PUC.login(MainData.USUARIO_SIN_UC, MainData.PASSWORD);
+        }catch (LoginException e){
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
 //        try{
 //
 //            AlumnoUC alumnoUC = PUC.login("usuarioSINuc", "Password", new LoadingCallback() {

@@ -90,6 +90,9 @@ public class BuscaCursos {
                     for (Element module_row : module_rows){
                         Elements row_data = module_row.select(":root > td");
                         String[] splitted = row_data.get(0).text().trim().split(":");
+                        if (splitted.length < 2){
+                            continue;
+                        }
                         String days = splitted[0];
                         String modules = splitted[1];
                         String type = row_data.get(1).text().trim();
