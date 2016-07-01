@@ -9,6 +9,7 @@ import cl.uc.fipezoa.pucapi.exceptions.SessionExpired;
 import cl.uc.fipezoa.pucapi.fichaacademica.FichaAcademica;
 import cl.uc.fipezoa.pucapi.fichaacademica.RamoCursado;
 import cl.uc.fipezoa.pucapi.fichaacademica.Semestre;
+import cl.uc.fipezoa.pucapi.portaluc.UCMacAddress;
 import cl.uc.fipezoa.requests.Response;
 import cl.uc.fipezoa.requests.Session;
 import cl.uc.fipezoa.requests.UrlParameters;
@@ -39,6 +40,7 @@ import java.util.*;
 public class AlumnoUC implements Serializable{
 
     private Ramos<RamoAlumno> ramosEnCurso = new Ramos<>();
+    private ArrayList<UCMacAddress> macAddresses = new ArrayList<>();
 
     private byte[] fotoPortal;
 
@@ -115,6 +117,28 @@ public class AlumnoUC implements Serializable{
                 nombre += s.substring(1).toLowerCase() +
                         (componentesNombre[componentesNombre.length - 1] == s ? "" : " ");
             }
+    }
+
+    public void cargarDireccionesMac() throws IOException {
+        session.post("https://portal.uc.cl/c/portal/render_portlet?" +
+                "p_l_id=10229&p_p_id=RegistroMac_WAR_LPT028_RegistroMac_INSTANCE_" +
+                "L0Zr&p_p_lifecycle=0&p_p_state=normal&p_p_mode=view&p_p_col_id=column-3" +
+                "&p_p_col_pos=1&p_p_col_count=2" +
+                "&currentURL=%2Fweb%2Fhome-community%2Finicio");
+        Response response3 = session.post("https://portal.uc.cl/" +
+                "LPT028_RegistroMac/GetListaMac_controller");
+        Document macDocument = Jsoup.parse(response3.getContent().toString());
+        Element table = macDocument.body().getElementsByTag("table").first();
+        Elements trs = table.getElementsByTag("tr");
+        for (Element tr : trs){
+            if (tr.attr("id").contains("registro")) {
+                Elements tds = tr.getElementsByTag("td");
+                System.out.println(tds.get(0).text());
+                System.out.println(tds.get(1).text());
+                UCMacAddress macAddress = new UCMacAddress(tds.get(1).text(), tds.get(0).text());
+                macAddresses.add(macAddress);
+            }
+        }
     }
 
     public Document portalLogin() throws IOException, LoginException {
