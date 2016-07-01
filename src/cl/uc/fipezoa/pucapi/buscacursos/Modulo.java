@@ -24,8 +24,8 @@ public class Modulo implements Serializable {
     public boolean topa(Modulo otro){
         if (otro.getDia().equals(dia)){
             if (otro.getNumero() == numero){
-                if (otro.getTipo().equals("LAB") || otro.getTipo().equals("CAT")){
-                    if (tipo.equals("LAB") || tipo.equals("CAT")){
+                if (otro.getTipo().equals("LAB") || otro.getTipo().equals("CLAS")){
+                    if (tipo.equals("LAB") || tipo.equals("CLAS")){
                         return true;
                     }
                 }

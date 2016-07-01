@@ -11,6 +11,8 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -19,29 +21,25 @@ import java.util.Map;
  * Created by fipezoa on 1/26/2016.
  */
 public class BuscaCursos {
+
+    static int TABLE_INDEX = 5;
     
     public static Ramos<RamoBuscaCursos> buscarCursos(FiltroBuscaCursos filtroBuscaCursos, LoadingCallback callback, boolean loadEverything) throws IOException {
+        Ramos<RamoBuscaCursos> results = new Ramos<>();
+
         UrlParameters urlParameters = filtroBuscaCursos.toUrlParameters();
         Response response = Requests.get("http://buscacursos.uc.cl/?" + urlParameters.toString(), urlParameters);
         Document buscaCursos = Jsoup.parse(response.getContent().toString());
 
-        // Academic units
-        Elements academicUnits = buscaCursos.getElementsByAttributeValue("style", "text-align:center; " +
-                "font-weight:bold; font-size:16px; color:#FFFFFF; background:#1730A6; padding:2px; margin:2px");
-        Map<Integer, String> academicUnitsMap = new HashMap<>();
-        ArrayList<Integer> keys = new ArrayList<>();
-        for (Element academicUnit : academicUnits){
-            int index = buscaCursos.toString().indexOf(academicUnit.toString());
-            keys.add(index);
-            academicUnitsMap.put(index, academicUnit.text());
-        }
+        Elements tables = buscaCursos.select("table");
 
-        Ramos<RamoBuscaCursos> results = new Ramos<>();
+        if (tables.size() <= 5) return results;
+        Element table = buscaCursos.select("table").get(TABLE_INDEX);
+        Elements table_rows = table.select("tbody > tr");
 
-        Elements trs = buscaCursos.getElementsByTag("tr");
         boolean unaSeccion = true;
         int times = 0;
-        for (Element tr : trs){
+        for (Element tr : table_rows){
             if (tr.className().equals("resultadosRowImpar") || tr.className().equals("resultadosRowPar")) {
                 if (times > 0){
                     unaSeccion = false;
@@ -50,69 +48,65 @@ public class BuscaCursos {
                 times++;
             }
         }
-        for (Element tr : trs){
-            if (tr.className().equals("resultadosRowImpar") || tr.className().equals("resultadosRowPar")){
-                Elements tds = tr.getElementsByTag("td");
-                int index = buscaCursos.toString().indexOf(tds.get(0).toString());
 
-                // Find academic unit
-                String unidadAcademica = "";
-                for (int i = 0; i < keys.size() - 1; i++){
-                    int key = keys.get(i);
-                    int nextKey = keys.get(i+1);
-                    if (key < index && index < nextKey){
-                        unidadAcademica = academicUnitsMap.get(key);
-                    }
-                }
-                if (unidadAcademica.equals("")){
-                    unidadAcademica = academicUnitsMap.get(keys.get(keys.size()-1));
-                }
+        HashMap<String, Integer> headers = getHeaders(table_rows.get(1));
 
-                int nrc = Integer.valueOf(tds.get(0).text());
-                int creditos = Integer.valueOf(tds.get(9).text());
-                int vacantesTotales = Integer.valueOf(tds.get(10).text());
-                int vacantesDisponibles = Integer.valueOf(tds.get(11).text());
-                int seccion = Integer.valueOf(tds.get(4).text());
-                String sigla = tds.get(1).text().replace(" ", "");
-                String nombre = tds.get(6).text();
-                String campus = tds.get(8).text();
-                String[] profesores = tds.get(7).text().split(",");
-                boolean permiteRetiro = tds.get(2).text().equalsIgnoreCase("si");
-                boolean dictadoEnIngles = tds.get(3).text().equalsIgnoreCase("si");
-                boolean requiereAprobEspecial = tds.get(5).text().equalsIgnoreCase("si");
+        String unidadAcademica = "";
+        for (Element row : table_rows){
+            if (row.attributes().size() == 0){
+                unidadAcademica = row.text().trim();
+            }else{
+                if (row.className().equals("resultadosRowPar") || row.className().equals("resultadosRowImpar")){
+                    Elements data = row.select(":root > td");
 
+                    String nombre = data.get(headers.get("Nombre")).text().trim();
+                    String sigla = data.get(headers.get("Sigla")).text().trim();
+                    String campus = data.get(headers.get("Campus")).text().trim();
 
-                RamoBuscaCursos ramo = new RamoBuscaCursos(filtroBuscaCursos.getSemestre(), sigla, nrc, creditos,
+                    int nrc = Integer.valueOf(data.get(headers.get("NRC")).text().trim());
+                    int creditos = Integer.valueOf(data.get(headers.get("Cred.")).text().trim());
+                    int seccion = Integer.valueOf(data.get(headers.get("Sec.")).text().trim());
+                    int vacantesDisponibles = Integer.valueOf(data.get(headers.get("Horario") - 1).text().trim());
+                    int vacantesTotales = Integer.valueOf(data.get(headers.get("Horario")).text().trim());
+
+                    boolean permiteRetiro = data.get(headers.get("Permite Retiro")).text().trim().equals("SI");
+                    boolean dictadoEnIngles = data.get(headers.get("Se dicta en ingles")).text().trim().equals("SI");
+                    boolean requiereAprobEspecial = data.get(headers.get("Requiere Aprob. Especial")).text().trim()
+                            .equals("SI");
+
+                    String[] profesores = data.get(headers.get("Profesor")).text().trim().split(",");
+
+                    RamoBuscaCursos ramo = new RamoBuscaCursos(filtroBuscaCursos.getSemestre(), sigla, nrc, creditos,
                         seccion, nombre, campus, unidadAcademica, profesores, dictadoEnIngles, permiteRetiro,
                         requiereAprobEspecial, vacantesTotales, vacantesDisponibles, unaSeccion);
 
-                if (loadEverything){
-                    ramo.cargarPrograma(callback);
-                    ramo.cargarRequisito(callback);
-                    ramo.cargarVacantesReservadas();
-                }
+                    if (loadEverything){
+                        ramo.cargarPrograma(callback);
+                        ramo.cargarRequisito(callback);
+                        ramo.cargarVacantesReservadas();
+                    }
 
-                if (tds.size() > 15){
-                    int i = 14;
-                    while( i <= tds.size() - 3){
-                        String dias = tds.get(i).text().split(":")[0];
-                        String modulos = tds.get(i).text().split(":")[1];
-                        String tipo = tds.get(i + 1).text();
-                        String sala = tds.get(i + 2).text();
-                        for (String dia : dias.split("-")){
-                            for (String modulo : modulos.split(",")){
-                                ramo.getModulos().add(new Modulo(dia, Integer.valueOf(modulo), sala, tipo, ramo));
+                    Elements module_rows = data.get(headers.get("Horario")+2).select("table > tbody > tr");
+                    for (Element module_row : module_rows){
+                        Elements row_data = module_row.select(":root > td");
+                        String[] splitted = row_data.get(0).text().trim().split(":");
+                        String days = splitted[0];
+                        String modules = splitted[1];
+                        String type = row_data.get(1).text().trim();
+                        String classroom = row_data.get(2).text().trim();
+                        for (String day : days.split("-")){
+                            for (String module : modules.split(",")){
+                                ramo.getModulos().add(new Modulo(day, Integer.valueOf(module), classroom, type, ramo));
                             }
                         }
-                        HorarioString horarioString = new HorarioString(tds.get(i).text().trim(), tipo, sala);
+                        HorarioString horarioString = new HorarioString(row_data.get(0).text().trim(), type, classroom);
                         ramo.getHorarioStrings().add(horarioString);
-                        i += 3;
                     }
+
+                    results.add(ramo);
                 }
-                results.add(ramo);
             }
         }
-
         return results;
     }
 
@@ -159,5 +153,18 @@ public class BuscaCursos {
                 // Do nothing...
             }
         }, loadEverythin);
+    }
+
+    private static HashMap<String, Integer> getHeaders(Element row){
+        HashMap<String, Integer> headers = new HashMap<>();
+        Elements elements = row.select(":root > td");
+        for (int i = 0; i < elements.size(); i++){
+            String s = elements.get(i).text().trim();
+            s = Normalizer.normalize( s, Normalizer.Form.NFD );
+            s = s.replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
+            s = s.replaceAll("[¿?]", "");
+            headers.put(s, i);
+        }
+        return headers;
     }
 }

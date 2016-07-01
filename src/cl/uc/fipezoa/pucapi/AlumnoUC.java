@@ -300,6 +300,7 @@ public class AlumnoUC implements Serializable{
                 String seccion = e.text().split("-")[1];
 
                 FiltroBuscaCursos filtro = new FiltroBuscaCursos();
+                filtro.setSemestre("2016-1");
                 filtro.setSigla(sigla);
 
                 callback.onProgressChange(new Progress(0, Progress.NORMAL, "Cargando ramo " + sigla + "-" + seccion));

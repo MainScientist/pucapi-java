@@ -1,8 +1,6 @@
 package cl.uc.fipezoa.pucapi;
 
-import cl.uc.fipezoa.pucapi.buscacursos.HorarioString;
-import cl.uc.fipezoa.pucapi.buscacursos.Modulo;
-import cl.uc.fipezoa.pucapi.buscacursos.RamoAlumno;
+import cl.uc.fipezoa.pucapi.buscacursos.*;
 import cl.uc.fipezoa.pucapi.callbacks.LoadingCallback;
 import cl.uc.fipezoa.pucapi.callbacks.Progress;
 import cl.uc.fipezoa.pucapi.exceptions.LoginException;
@@ -32,65 +30,77 @@ public class Main {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-
-        try{
-
-            AlumnoUC alumnoUC = PUC.login("usuarioSINuc", "Password", new LoadingCallback() {
-                @Override
-                public void onProgressChange(Progress progress) {
-                    System.out.println(progress.message);
+        FiltroBuscaCursos filtro = new FiltroBuscaCursos("2016-2");
+        filtro.setSigla("IIC2233");
+        try {
+            Ramos<RamoBuscaCursos> ramos = BuscaCursos.buscarCursos(filtro, true);
+            for (RamoBuscaCursos r : ramos){
+                for (Modulo m : r.getModulos()){
+                    System.out.format("%s %d %s \n", m.getDia(), m.getNumero(), m.getTipo());
                 }
-            });
-
-            alumnoUC.setSegundaClave("SEGUNDA CLAVE");
-
-
-            for (RamoAlumno ramo : alumnoUC.getRamosEnCurso()){
-                System.out.println(ramo.getSigla());
-                for (Modulo modulo : ramo.getModulos()){
-                    System.out.println(modulo.getDia() + "-" + String.valueOf(modulo.getNumero()) + ": " + modulo.getTipo() + ", " + modulo.getSala());
-                }
-                for (HorarioString horarioString : ramo.getHorarioStrings()){
-                    System.out.println(horarioString.dias + "\t" + horarioString.tipo + "\t" + horarioString.sala);
-                }
-                System.out.println("-----------------------------");
+                System.out.println(r.sigla);
             }
-
-
-
-            Store store = alumnoUC.getMailStore();
-            Folder inbox = store.getFolder("INBOX");
-            inbox.open(Folder.READ_WRITE);
-            Message message = inbox.getMessage(inbox.getMessageCount());
-            for (Address address : message.getFrom()) {
-                System.out.println("FROM:" + address.toString());
-            }
-            message.setFlag(Flags.Flag.FLAGGED, true);
-            System.out.println("SENT DATE:" + message.getSentDate());
-            System.out.println("SUBJECT:" + message.getSubject());
-            System.out.println("CONTENT:" + message.getContent());
-            javax.mail.Folder[] folders = store.getDefaultFolder().list("*");
-            for (Folder folder : folders) {
-                System.out.println(folder.getFullName());
-                if ((folder.getType() & Folder.HOLDS_FOLDERS) != 0){
-                    System.out.println("Holds folders");
-                }
-                if ((folder.getType() & Folder.HOLDS_MESSAGES) != 0){
-                    System.out.println("Holds messages");
-                }
-            }
-            inbox.close(true);
-            store.close();
-
-        }catch (IOException e){
+        } catch (IOException e) {
             e.printStackTrace();
         }
-        catch (LoginException e) {
-            e.printStackTrace();
-        } catch (MessagingException e) {
-            e.printStackTrace();
-        }
+
+//        try{
+//
+//            AlumnoUC alumnoUC = PUC.login("usuarioSINuc", "Password", new LoadingCallback() {
+//                @Override
+//                public void onProgressChange(Progress progress) {
+//                    System.out.println(progress.message);
+//                }
+//            });
+//
+//            alumnoUC.setSegundaClave("SEGUNDA CLAVE");
+//
+//
+//            for (RamoAlumno ramo : alumnoUC.getRamosEnCurso()){
+//                System.out.println(ramo.getSigla());
+//                for (Modulo modulo : ramo.getModulos()){
+//                    System.out.println(modulo.getDia() + "-" + String.valueOf(modulo.getNumero()) + ": " + modulo.getTipo() + ", " + modulo.getSala());
+//                }
+//                for (HorarioString horarioString : ramo.getHorarioStrings()){
+//                    System.out.println(horarioString.dias + "\t" + horarioString.tipo + "\t" + horarioString.sala);
+//                }
+//                System.out.println("-----------------------------");
+//            }
+//
+//
+//
+//            Store store = alumnoUC.getMailStore();
+//            Folder inbox = store.getFolder("INBOX");
+//            inbox.open(Folder.READ_WRITE);
+//            Message message = inbox.getMessage(inbox.getMessageCount());
+//            for (Address address : message.getFrom()) {
+//                System.out.println("FROM:" + address.toString());
+//            }
+//            message.setFlag(Flags.Flag.FLAGGED, true);
+//            System.out.println("SENT DATE:" + message.getSentDate());
+//            System.out.println("SUBJECT:" + message.getSubject());
+//            System.out.println("CONTENT:" + message.getContent());
+//            javax.mail.Folder[] folders = store.getDefaultFolder().list("*");
+//            for (Folder folder : folders) {
+//                System.out.println(folder.getFullName());
+//                if ((folder.getType() & Folder.HOLDS_FOLDERS) != 0){
+//                    System.out.println("Holds folders");
+//                }
+//                if ((folder.getType() & Folder.HOLDS_MESSAGES) != 0){
+//                    System.out.println("Holds messages");
+//                }
+//            }
+//            inbox.close(true);
+//            store.close();
+//
+//        }catch (IOException e){
+//            e.printStackTrace();
+//        }
+//        catch (LoginException e) {
+//            e.printStackTrace();
+//        } catch (MessagingException e) {
+//            e.printStackTrace();
+//        }
 
 //        try {
 //            AlumnoUC alumnoUC = PUC.login("fipezoa", "FelipeI07", new LoadingCallback(){
